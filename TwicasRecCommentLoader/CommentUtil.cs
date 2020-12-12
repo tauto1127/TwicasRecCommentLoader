@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.IO;
 using System.Text.RegularExpressions;
 
@@ -13,6 +14,11 @@ namespace TwicasRecCommentLoader
             this.Id = id;
             this.Number = number;
             this.Time = time;
+        }
+
+        public TwicasComment()
+        {
+            
         }
         public int Number { get; set; }
         public string Id { get; set; }
@@ -34,25 +40,42 @@ namespace TwicasRecCommentLoader
         /// <summary>
         /// 分割したコメント
         /// </summary>
-        public List<TwicasComment> TwicasComments { get; set; } = new List<TwicasComment>();
+        public ObservableCollection<TwicasComment> TwicasComments { get; set; } = new ObservableCollection<TwicasComment>();
 
         public CommentUtil(string path)
         {
-            CommentLoader(path);
+            OldCommentList.Clear();
+            
+            CommentLoader(path); 
+            //CommentLoader(path);
             CommentSplit();
         }
 
+        /// <summary>
+        /// テスト用
+        /// </summary>
+        /// <param name="testMode"></param>
+        /// <param name="path"></param>
+
         private void CommentSplit()
-        {
-            Regex regex = new Regex(@"\[....\/..\/(?<date>..).(?<oclock>..)\:(?<minute>..)\:(?<secound>..)\].(?<comment>.+)（(?<id>.+)）");
-            int i = 0;
+        {//NotSupportedException
+            Regex regex = new Regex(@"\[....\/..\/(?<date>..).(?<oclock>.+)\:(?<minute>..)\:(?<secound>..)\].(?<comment>.+)（(?<id>.+)）");
+            var i = 0;
             Match match;
-            
-            
 
 
-            match = regex.Match(OldCommentList[0]);
-            int Day = Int32.Parse(match.Result("${date}"));
+
+            int Day = 0;
+
+            try
+            {
+                match = regex.Match(OldCommentList[0]);
+                Day = Int32.Parse(match.Groups["date"].ToString());
+            }
+            catch (NotSupportedException)
+            {
+                
+            }
 
             int time;
             foreach (string variable in OldCommentList)
@@ -61,9 +84,9 @@ namespace TwicasRecCommentLoader
                 if (regex.IsMatch(variable))
                 {
                     match = regex.Match(variable);
-                    time = Int32.Parse(match.Result("${oclock}")) * 360 + Int32.Parse(match.Result("${minute}")) * 60 +
-                           Int32.Parse(match.Result("${secound}"));
-                    if (Day != Int32.Parse(match.Result("${date}")))
+                    time = Int32.Parse(match.Groups["oclock"].ToString()) * 360 + Int32.Parse(match.Groups["minute"].ToString()) * 60 +
+                           Int32.Parse(match.Groups["secound"].ToString());
+                    if (Day != Int32.Parse(match.Groups["date"].ToString()))
                     {
                         time += 24 * 60 * 60;
                     }
@@ -75,11 +98,11 @@ namespace TwicasRecCommentLoader
 
         public static void CommentLoader(string commentFilePath)
         {
+            Regex regex = new Regex(@"\[....\/..\/.+\:..\:..\].+（.+）");
             try
             {
                 using (StreamReader sr = new StreamReader(commentFilePath))
                 {
-                    Regex regex = new Regex(@"\[....\/..\/.+\:..\:..\]");
                     string line;
                     while ((line = sr.ReadLine()) != null)
                     {
@@ -91,13 +114,24 @@ namespace TwicasRecCommentLoader
                     }
                 }
             }
-            catch (Exception e)
+            catch (ArgumentException)
             {
-                Console.WriteLine(e.Message);
+                throw new ArgumentException();
             }
+            if(OldCommentList.Count == 0){throw new NoCommentException();}
+
         }
 
 
-        
+
+    }
+
+    [Serializable()]
+    public class NoCommentException : Exception
+    {
+        public NoCommentException()
+        {
+            
+        }
     }
 }
