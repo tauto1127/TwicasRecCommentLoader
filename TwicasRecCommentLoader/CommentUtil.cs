@@ -49,6 +49,20 @@ namespace TwicasRecCommentLoader
             CommentLoader(path); 
             //CommentLoader(path);
             CommentSplit();
+            CommentTimeChange();
+        }
+
+        /// <summary>
+        /// Timeを0から始まるようにする
+        /// </summary>
+        private void CommentTimeChange()
+        {
+            int firstCommentTime;
+            firstCommentTime = TwicasComments[0].Time;
+            foreach (var VARIABLE in TwicasComments)
+            {
+                VARIABLE.Time -= firstCommentTime;
+            }
         }
 
         /// <summary>
