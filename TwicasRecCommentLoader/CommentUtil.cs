@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.IO;
+using System.Linq;
 using System.Text.RegularExpressions;
 
 namespace TwicasRecCommentLoader
@@ -41,7 +42,8 @@ namespace TwicasRecCommentLoader
         /// 分割したコメント
         /// </summary>
         public ObservableCollection<TwicasComment> TwicasComments { get; set; } = new ObservableCollection<TwicasComment>();
-
+        public ObservableCollection<TwicasComment> SortedTwicasComments { get; } = new ObservableCollection<TwicasComment>();
+        
         public CommentUtil(string path)
         {
             OldCommentList.Clear();
@@ -49,7 +51,31 @@ namespace TwicasRecCommentLoader
             CommentLoader(path); 
             //CommentLoader(path);
             CommentSplit();
-            CommentTimeChange();
+            CommentOrderBy();
+            //CommentTimeChange();
+        }
+
+        private void CommentOrderBy()
+        {
+            int maxValue = 0;
+            foreach (var twicasComment in TwicasComments)
+            {
+                if (twicasComment.Time > maxValue)
+                {
+                    maxValue = twicasComment.Time;
+                }
+            }
+
+            for (int i = 0; i <= maxValue; i++)
+            {
+                foreach (var twicasComment in TwicasComments)
+                {
+                    if (i == twicasComment.Time)
+                    {
+                        SortedTwicasComments.Add(twicasComment);
+                    }
+                }
+            }
         }
 
         /// <summary>
@@ -58,8 +84,8 @@ namespace TwicasRecCommentLoader
         private void CommentTimeChange()
         {
             int firstCommentTime;
-            firstCommentTime = TwicasComments[0].Time;
-            foreach (var VARIABLE in TwicasComments)
+            firstCommentTime = SortedTwicasComments[0].Time;
+            foreach (var VARIABLE in SortedTwicasComments)
             {
                 VARIABLE.Time -= firstCommentTime;
             }
@@ -98,7 +124,7 @@ namespace TwicasRecCommentLoader
                 if (regex.IsMatch(variable))
                 {
                     match = regex.Match(variable);
-                    time = Int32.Parse(match.Groups["oclock"].ToString()) * 360 + Int32.Parse(match.Groups["minute"].ToString()) * 60 +
+                    time = Int32.Parse(match.Groups["oclock"].ToString()) * 60 * 60 + Int32.Parse(match.Groups["minute"].ToString()) * 60 +
                            Int32.Parse(match.Groups["secound"].ToString());
                     if (Day != Int32.Parse(match.Groups["date"].ToString()))
                     {
